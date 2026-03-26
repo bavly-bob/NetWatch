@@ -4,17 +4,7 @@ Prerequisites (both options)
 - CMake
 - vcpkg (added as a submodule in this repo)
 - Qt 6.10.2 (matching your toolchain)
-
-Common setup (once per repo)
-1. Add and bootstrap vcpkg
-   git submodule add https://github.com/microsoft/vcpkg.git
-   .\vcpkg\bootstrap-vcpkg.bat
-
-Expected output
-- The window opens.
-- About 1 second later you should see:
-  "Boost.Asio timer fired ..." in the Debug Console / terminal.
-
+- 
 Option A: MSVC + vcpkg (x64-windows)
 
 1. Install prerequisites
