@@ -22,9 +22,9 @@ private: // internal async handlers
     void doConnect(const tcp::resolver::results_type& endpoints);
 
 private: // member variables
-    io_context& io_;
-    tcp::resolver resolver_;
-    Ptr<Connection> connection_;
+    io_context& net_io_context;
+    tcp::resolver net_resolver;
+    Ptr<Connection> net_connection;
 };
 
 } // namespace netwatch::networking

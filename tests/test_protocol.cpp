@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../networking/include/protocol.hpp"
+#include "protocol.hpp"
 
 int main(int argc, char* argv[]) {
     std::cout << "Running Protocol Tests..." << std::endl;
