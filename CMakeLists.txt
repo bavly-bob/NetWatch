@@ -16,11 +16,36 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Boost CONFIG REQUIRED COMPONENTS asio)
 
+# Networking and Common Library
+add_library(NetWatch_Networking STATIC
+    networking/src/connection.cpp
+    networking/src/client.cpp
+    networking/src/server.cpp
+)
+target_include_directories(NetWatch_Networking PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/common
+    ${CMAKE_CURRENT_SOURCE_DIR}/networking/include
+)
+target_link_libraries(NetWatch_Networking PUBLIC Boost::asio)
+if(WIN32)
+    target_link_libraries(NetWatch_Networking PRIVATE ws2_32)
+endif()
+
+# Agent Executable
+add_executable(NetWatchAgent
+    agent/main.cpp
+    agent/src/system_monitor.cpp
+    agent/src/process_monitor.cpp
+)
+target_include_directories(NetWatchAgent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/agent/include)
+target_link_libraries(NetWatchAgent PRIVATE NetWatch_Networking)
+
+# Dashboard Target (Main Application)
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+    dashboard/main.cpp
+    dashboard/mainwindow.cpp
+    dashboard/mainwindow.hpp
+    dashboard/mainwindow.ui
 )
 
 if(QT_VERSION_MAJOR GREATER_EQUAL 6)
@@ -28,17 +53,11 @@ if(QT_VERSION_MAJOR GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET NetWatch APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
         add_library(NetWatch SHARED
             ${PROJECT_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(NetWatch
             ${PROJECT_SOURCES}
@@ -46,17 +65,20 @@ else()
     endif()
 endif()
 
+target_include_directories(NetWatch PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/dashboard 
+    ${CMAKE_CURRENT_SOURCE_DIR}/dashboard/widgets
+)
+
 target_link_libraries(NetWatch PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Boost::asio
+    NetWatch_Networking
 )
 if(WIN32)
     target_link_libraries(NetWatch PRIVATE ws2_32)
 endif()
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
 if(QT_VERSION VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.NetWatch)
 endif()
@@ -68,8 +90,18 @@ set_target_properties(NetWatch PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+# Testing
+enable_testing()
+add_executable(test_protocol tests/test_protocol.cpp)
+target_link_libraries(test_protocol PRIVATE NetWatch_Networking)
+add_test(NAME ProtocolTest COMMAND test_protocol)
+
+add_executable(test_connection tests/test_connection.cpp)
+target_link_libraries(test_connection PRIVATE NetWatch_Networking)
+add_test(NAME ConnectionTest COMMAND test_connection)
+
 include(GNUInstallDirs)
-install(TARGETS NetWatch
+install(TARGETS NetWatch NetWatchAgent NetWatch_Networking
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

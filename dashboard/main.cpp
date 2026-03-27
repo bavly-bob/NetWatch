@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 
 #include <QApplication>
 #include <QDebug>
@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
+    w.setWindowTitle("NetWatch");
+
     w.show();
     start_boost_asio_demo();
     return a.exec();

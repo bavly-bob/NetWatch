@@ -1,0 +1,31 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows MSVC",
+      "description": "Build with MSVC and vcpkg (Qt 6.10.2)",
+      "binaryDir": "${sourceDir}/build",
+      "toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.2/msvc2019_64",
+        "Qt6_DIR": "C:/Qt/6.10.2/msvc2019_64/lib/cmake/Qt6"
+      }
+    },
+    {
+      "name": "windows-mingw",
+      "displayName": "Windows MinGW",
+      "description": "Build with MinGW and vcpkg (Qt 6.10.2)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-mingw",
+      "toolchainFile": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.2/mingw_64",
+        "CMAKE_C_COMPILER": "C:/Qt/Tools/mingw1310_64/bin/gcc.exe",
+        "CMAKE_CXX_COMPILER": "C:/Qt/Tools/mingw1310_64/bin/g++.exe"
+      }
+    }
+  ]
+}
