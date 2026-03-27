@@ -1,0 +1,11 @@
+feat(networking): implement core TCP client-server architecture using Boost.Asio
+
+This commit establishes the foundational asynchronous networking layer for the NetWatch project, introducing the core classes and structures required for reliable client-server communication. 
+
+Key additions:
+- Common Types (`common/types.hpp`): Introduced central type aliases for `boost::asio` types (`tcp`, `io_context`), callback handlers (`MessageHandler`, `DisconnectHandler`), and smart pointers to ensure consistency.
+- Protocol Definition (`networking/include/protocol.hpp`): Implemented basic message framing utilities (4-byte length prefix + payload) for robust TCP stream parsing, and defined core `MessageType` enumerations (Heartbeat, SystemStats, ProcessList).
+- Connection Handling (`networking/include/connection.hpp`): Added the `Connection` class to manage individual socket lifecycles, processing asynchronous header and body reads/writes.
+- Server Implementation (`networking/include/server.hpp`): Created the `Server` class to manage a `tcp::acceptor`, listening for incoming connections and maintaining a list of active clients.
+- Client Implementation (`networking/include/client.hpp`): Built the `Client` class to resolve endpoints, initiate TCP connections, and dispatch messages to the server.
+- Cleanup: Removed the unused binary file `exts.txt`.
