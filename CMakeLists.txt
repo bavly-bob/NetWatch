@@ -9,12 +9,16 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
-    add_compile_options(/Zc:__cplusplus /permissive-)
+    add_compile_options(/Zc:__cplusplus /permissive- /w4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Boost CONFIG REQUIRED COMPONENTS asio)
+find_package(Boost REQUIRED COMPONENTS system)
 
 # Networking and Common Library
 add_library(NetWatch_Networking STATIC
@@ -26,9 +30,9 @@ target_include_directories(NetWatch_Networking PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/common
     ${CMAKE_CURRENT_SOURCE_DIR}/networking/include
 )
-target_link_libraries(NetWatch_Networking PUBLIC Boost::asio)
+target_link_libraries(NetWatch_Networking PUBLIC Boost::system Threads::Threads)
 if(WIN32)
-    target_link_libraries(NetWatch_Networking PRIVATE ws2_32)
+    target_link_libraries(NetWatch_Networking PUBLIC ws2_32 mswsock)
 endif()
 
 # Agent Executable
@@ -46,6 +50,8 @@ set(PROJECT_SOURCES
     dashboard/mainwindow.cpp
     dashboard/mainwindow.hpp
     dashboard/mainwindow.ui
+    dashboard/widgets/process_table.cpp
+    dashboard/widgets/process_table.hpp
 )
 
 if(QT_VERSION_MAJOR GREATER_EQUAL 6)
@@ -68,11 +74,12 @@ endif()
 target_include_directories(NetWatch PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/dashboard 
     ${CMAKE_CURRENT_SOURCE_DIR}/dashboard/widgets
+    ${CMAKE_CURRENT_SOURCE_DIR}/common
 )
 
 target_link_libraries(NetWatch PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
-    Boost::asio
+    Boost::system
     NetWatch_Networking
 )
 if(WIN32)

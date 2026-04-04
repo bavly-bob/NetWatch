@@ -1,23 +1,26 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
+#pragma once
 #include <QMainWindow>
+#include <QProgressBar>
+#include <QLabel>
+#include "widgets/process_table.hpp"
+#include "../networking/include/client.hpp"
+#include "message_types.hpp"
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
-
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
-
 public:
     MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+
+private slots:
+    void onDataReceived(const SystemStats& stats);
+    void onConnectionStatusChanged(bool connected);
 
 private:
-    Ui::MainWindow *ui;
+    void setupUI();
+    
+    QProgressBar *cpuBar;
+    QProgressBar *ramBar;
+    QLabel *uptimeLabel;
+    QLabel *statusLabel;
+    ProcessTable *processTable;
 };
-#endif // MAINWINDOW_H
