@@ -2,6 +2,9 @@
 #include <QMainWindow>
 #include <QProgressBar>
 #include <QLabel>
+#include <QListWidget>
+#include <QMap>
+#include <QGroupBox>
 #include "widgets/process_table.hpp"
 #include "../networking/include/client.hpp"
 #include "message_types.hpp"
@@ -17,10 +20,18 @@ private slots:
 
 private:
     void setupUI();
-    
+    void setupStyles();
+    void refreshDisplay();
+    bool isDemoMode = true;
+    void loadDemoData();
+    QGroupBox* createGaugeGroup(QString title, QProgressBar* bar);
     QProgressBar *cpuBar;
     QProgressBar *ramBar;
-    QLabel *uptimeLabel;
+    QLabel *infoLabel;
     QLabel *statusLabel;
+    QListWidget *deviceListWidget;
     ProcessTable *processTable;
+
+    QMap<QString, SystemStats> allDevicesData;
+    QString currentSelectedDevice;
 };

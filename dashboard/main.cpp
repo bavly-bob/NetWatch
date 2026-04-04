@@ -3,9 +3,13 @@
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    
-    MainWindow w;
-    w.show();
-    
+
+    QApplication::setApplicationName("NetWatch Dashboard");
+    QApplication::setApplicationVersion("0.1");
+    QApplication::setOrganizationName("CapstoneTeam");
+
+    MainWindow window;
+    window.show();
+
     return app.exec();
 }

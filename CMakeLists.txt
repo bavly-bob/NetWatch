@@ -52,6 +52,8 @@ set(PROJECT_SOURCES
     dashboard/mainwindow.ui
     dashboard/widgets/process_table.cpp
     dashboard/widgets/process_table.hpp
+    dashboard/widgets/device_card.hpp
+    dashboard/widgets/device_card.cpp
 )
 
 if(QT_VERSION_MAJOR GREATER_EQUAL 6)
