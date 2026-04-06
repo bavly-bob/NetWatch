@@ -5,6 +5,7 @@ project(NetWatch VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+set(VCPKG_APPLOCAL_DEPS OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -101,7 +102,7 @@ target_link_libraries(test_protocol PRIVATE NetWatch_Networking)
 add_test(NAME ProtocolTest COMMAND test_protocol)
 
 add_executable(test_connection tests/test_connection.cpp)
-target_link_libraries(test_connection PRIVATE NetWatch_Networking)
+target_link_libraries(test_connection PRIVATE NetWatch_Networking Boost::asio ws2_32 mswsock)
 add_test(NAME ConnectionTest COMMAND test_connection)
 
 include(GNUInstallDirs)

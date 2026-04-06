@@ -1,4 +1,5 @@
 #include "client.hpp"
+#include "connection.hpp"
 #include <iostream>
 
 namespace netwatch::networking {
