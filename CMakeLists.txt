@@ -17,9 +17,11 @@ if(WIN32)
     add_compile_definitions(_WIN32_WINNT=0x0601)
 endif()
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Boost CONFIG REQUIRED COMPONENTS asio)
+find_package(Boost REQUIRED COMPONENTS system)
 
 # Networking and Common Library
 add_library(NetWatch_Networking STATIC
@@ -31,9 +33,9 @@ target_include_directories(NetWatch_Networking PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/common
     ${CMAKE_CURRENT_SOURCE_DIR}/networking/include
 )
-target_link_libraries(NetWatch_Networking PUBLIC Boost::asio)
+target_link_libraries(NetWatch_Networking PUBLIC Boost::system Threads::Threads)
 if(WIN32)
-    target_link_libraries(NetWatch_Networking PRIVATE ws2_32)
+    target_link_libraries(NetWatch_Networking PUBLIC ws2_32 mswsock)
 endif()
 
 # Agent Executable
@@ -51,6 +53,10 @@ set(PROJECT_SOURCES
     dashboard/mainwindow.cpp
     dashboard/mainwindow.hpp
     dashboard/mainwindow.ui
+    dashboard/widgets/process_table.cpp
+    dashboard/widgets/process_table.hpp
+    dashboard/widgets/device_card.hpp
+    dashboard/widgets/device_card.cpp
 )
 
 if(QT_VERSION_MAJOR GREATER_EQUAL 6)
@@ -73,11 +79,12 @@ endif()
 target_include_directories(NetWatch PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/dashboard 
     ${CMAKE_CURRENT_SOURCE_DIR}/dashboard/widgets
+    ${CMAKE_CURRENT_SOURCE_DIR}/common
 )
 
 target_link_libraries(NetWatch PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
-    Boost::asio
+    Boost::system
     NetWatch_Networking
 )
 if(WIN32)
@@ -102,7 +109,10 @@ target_link_libraries(test_protocol PRIVATE NetWatch_Networking)
 add_test(NAME ProtocolTest COMMAND test_protocol)
 
 add_executable(test_connection tests/test_connection.cpp)
-target_link_libraries(test_connection PRIVATE NetWatch_Networking Boost::asio ws2_32 mswsock)
+target_link_libraries(test_connection PRIVATE NetWatch_Networking)
+if(WIN32)
+    target_link_libraries(test_connection PRIVATE ws2_32 mswsock)
+endif()
 add_test(NAME ConnectionTest COMMAND test_connection)
 
 include(GNUInstallDirs)
