@@ -1,3 +1,5 @@
+// client impementation - connects to server and sends messages
+
 #include "client.hpp"
 #include "connection.hpp"
 #include <iostream>
@@ -22,7 +24,7 @@ void Client::doConnect(const tcp::resolver::results_type& endpoints)
     Ptr<tcp::socket> socket = std::make_shared<tcp::socket>(net_io_context);
 
     boost::asio::async_connect(*socket, endpoints, 
-                                [this, socket]
+                                [self = shared_from_this(), socket]
                                 (const boost::system::error_code& ec, const tcp::endpoint&) 
         {
             if (!ec) 
@@ -30,14 +32,14 @@ void Client::doConnect(const tcp::resolver::results_type& endpoints)
                 std::cout << "[Client] Connected successfully\n";
 
                 // Wrap socket into Connection object
-                net_connection = std::make_shared<Connection>(std::move(*socket));
+                self->net_connection = std::make_shared<Connection>(std::move(*socket));
 
-                net_connection->setDisconnectHandler([this]() {
+                self->net_connection->setDisconnectHandler([self]() {
                     std::cout << "[Client] Disconnected from server\n";
-                    net_connection.reset();
+                    self->net_connection.reset();
                 });
 
-                net_connection->start(); // start reading
+                self->net_connection->start(); // start reading
             } 
             else
                 std::cerr << "[Client] Connection failed: " << ec.message() << "\n";

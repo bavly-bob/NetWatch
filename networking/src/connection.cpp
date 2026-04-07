@@ -1,3 +1,5 @@
+// connection implementation - handles reading and writing messages to a client
+
 #include "connection.hpp"
 #include <iostream>
 #include <deque>

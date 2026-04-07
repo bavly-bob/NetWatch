@@ -9,7 +9,7 @@
 
 namespace netwatch::networking {
 
-class Server {
+class Server : public std::enable_shared_from_this<Server> {
 public:
     Server(io_context& io, uint16_t port);
     void start();
@@ -19,9 +19,9 @@ private: // internal async handlers
     void doAccept();
 
 private: // member variables
-    io_context& io_;
-    tcp::acceptor acceptor_;
-    std::vector<Ptr<Connection>> connections_;
+    io_context& server_io;
+    tcp::acceptor server_acceptor;
+    std::vector<Ptr<Connection>> server_connections;
 };
 
 } // namespace netwatch::networking

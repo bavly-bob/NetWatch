@@ -28,6 +28,7 @@ add_library(NetWatch_Networking STATIC
     networking/src/connection.cpp
     networking/src/client.cpp
     networking/src/server.cpp
+    networking/src/protocol.cpp
 )
 target_include_directories(NetWatch_Networking PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/common
