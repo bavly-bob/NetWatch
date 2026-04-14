@@ -29,6 +29,7 @@ SystemMonitor::SystemMonitor() {
 	   m_prevKernelTime.HighPart = kernel.dwHighDateTime;
 	   m_prevUserTime.LowPart = user.dwLowDateTime;
 	   m_prevUserTime.HighPart = user.dwHighDateTime;
+	}
    #else
 	sampleCpu();
    #endif
@@ -77,7 +78,7 @@ std::string SystemMonitor::getIpAddress() const {
 
 	std::string result = "0.0.0.0";
 	for (auto* ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-	   if(!ifa->ifa_addr || ifa->ifa_add->sa_family != AF_INET) continue;
+	   if(!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET) continue;
 	   if(std::string(ifa->ifa_name) == "lo") continue;
 
 	   char ip[INET_ADDRSTRLEN] = {};
@@ -88,6 +89,7 @@ std::string SystemMonitor::getIpAddress() const {
 	}
 	freeifaddrs(ifaddr);
 	return result;
+#endif
 }
 
 std::string SystemMonitor::getUptime() const {
@@ -111,7 +113,7 @@ std::string SystemMonitor::getUptime() const {
 	return out;
 }
 
-SystemMonitor::MemoryIngo SystemMonitor::sampleMemory() const
+SystemMonitor::MemoryInfo SystemMonitor::sampleMemory() const
 {
 	MemoryInfo info{};
 
@@ -122,11 +124,11 @@ SystemMonitor::MemoryIngo SystemMonitor::sampleMemory() const
 	   info.totalMemoryKB = static_cast<unsigned long>(ms.ullTotalPhys / 1024ULL);
 	   info.freeMemoryKB = static_cast<unsigned long>(ms.ullAvailPhys / 1024ULL);
 	   if(info.totalMemoryKB > 0)
-		info.memoryUsagePercent = 100.0f * static_cast<float>(info.usedMemoryKB) / static_cast<float>(info.totalMemoryKB)
+		info.memoryUsagePercent = 100.0f * static_cast<float>(info.usedMemoryKB) / static_cast<float>(info.totalMemoryKB);
 	}
 #else
 	std::ifstream f("/proc/meminfo");
-	if(!f.is_open{}) return info;
+	if(!f.is_open()) return info;
 
 	unsigned long totalKB = 0, freeKB = 0, buffersKB = 0, cachedKB = 0, reclaimableKB = 0;
 	std::string key;
@@ -154,7 +156,7 @@ SystemMonitor::MemoryIngo SystemMonitor::sampleMemory() const
 }
 
 SystemMonitor::CpuInfo SystemMonitor::sampleCpu() {
-	CpuInfo info();
+	CpuInfo info{};
 
 #ifdef _WIN32
 	SYSTEM_INFO si{};
@@ -166,7 +168,7 @@ SystemMonitor::CpuInfo SystemMonitor::sampleCpu() {
 
 	ULARGE_INTEGER curIdle, curKernel, curUser;
 	curIdle.LowPart = idle.dwLowDateTime; curIdle.HighPart = idle.dwHighDateTime;
-	curKernel.LowPart = kernel.dwLowDateTime; curKernel.HighPart = idle.dwHighDate;
+	curKernel.LowPart = kernel.dwLowDateTime; curKernel.HighPart = kernel.dwHighDateTime;
 	curUser.LowPart = user.dwLowDateTime; curUser.HighPart = user.dwHighDateTime;
 
 	ULONGLONG deltaIdle = curIdle.QuadPart - m_prevIdleTime.QuadPart;
@@ -189,7 +191,7 @@ SystemMonitor::CpuInfo SystemMonitor::sampleCpu() {
 	if(!f.is_open()) return info;
 
 	std::string label;
-	unsigned long long user2, nice, system, idle2, iowait, irq, softirq, stteal;
+	unsigned long long user2, nice, system, idle2, iowait, irq, softirq, steal;
 	f >> label >> user2 >> nice >> system >> idle2 >> iowait >> irq >> softirq >> steal;
 
 	unsigned long long idleTotal = idle2 + iowait;
@@ -213,8 +215,7 @@ void SystemMonitor::start(std::chrono::milliseconds interval) {
     if(m_running) return;
     m_interval = interval;
     m_running = true;
-    m_thread = std::thread(&SystemMonitor::pollLoop, this)
-
+    m_thread = std::thread(&SystemMonitor::pollLoop, this);
 }
 
 void SystemMonitor::stop() {

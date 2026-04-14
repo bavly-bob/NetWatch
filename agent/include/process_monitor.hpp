@@ -44,7 +44,7 @@ private:
 	int numCores{1};
     };
 #else
-    struct PrevTime {
+    struct PrevTimes {
 	unsigned long long utime{0};
 	unsigned long long stime{0};
 	unsigned long long wallClock{0};
@@ -52,10 +52,10 @@ private:
     };
 #endif
 
-    std::unordered_map<uint32_t, prevTimes> m_prevTimes;
+    std::unordered_map<uint32_t, PrevTimes> m_prevTimes;
 
     mutable std::mutex m_mutex;
-    std::vectore<ProcessInfo> m_processes;
+    std::vector<ProcessInfo> m_processes;
 
     std::atomic<bool> m_running{false};
     std::thread m_thread;

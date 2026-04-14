@@ -1,6 +1,6 @@
 #include "process_monitor.hpp"
 
-#include <algorith>
+#include <algorithm>
 #include <cstring>
 
 #ifdef _WIN32
@@ -32,7 +32,7 @@ ProcessMonitor::ProcessInfo ProcessMonitor::getProcessInfo(uint32_t pid) const {
 	std::lock_guard<std::mutex> lock(m_mutex);
 	for (const auto& p : m_processes)
 	    if(p.pid == pid) return p;
-	return ProcessInfo(pid, "", 0.0f, 0);
+	return ProcessInfo{pid, "", 0.0f, 0};
 }
 
 void ProcessMonitor::start(std::chrono::milliseconds interval) {
@@ -77,9 +77,34 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 	if(snap == INVALID_HANDLE_VALUE) return result;
 
 	PROCESSENTRY32W entry{};
-	entry,dwSize = sizeof(entry);
+	entry.dwSize = sizeof(entry);
 
 	if(!Process32FirstW(snap, &entry)) {
 	   CloseHandle(snap);
 	   return result;
 	}
+
+	do {
+		ProcessInfo info{};
+		info.pid = entry.th32ProcessID;
+		char buf[MAX_PATH] = {};
+		WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, buf, MAX_PATH, nullptr, nullptr);
+		info.name = buf;
+		info.cpuUsagePercent = 0.0f;
+		info.memoryUsageKB = 0;
+		result.push_back(info);
+	} while(Process32NextW(snap, &entry));
+
+	CloseHandle(snap);
+	return result;
+}
+
+#else
+
+std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
+	std::vector<ProcessInfo> result;
+	// TODO: Write Non-Windows logic
+	return result;
+}
+
+#endif
