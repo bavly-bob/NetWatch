@@ -3,7 +3,16 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <mutex>
+#include <thread>
+#include <atomic>
+#include <chrono>
 #include <cstdint>
+
+#ifdef _WIN32
+  #include <windows.h>
+#endif
 
 class ProcessMonitor {
 public:
@@ -13,17 +22,46 @@ public:
     struct ProcessInfo {
         uint32_t pid;
         std::string name;
-        float cpuUsage;
-        uint64_t memoryUsage;
+        float cpuUsagePercent;
+        uint64_t memoryUsageKB;
     };
     
     std::vector<ProcessInfo> getProcessList() const;
     ProcessInfo getProcessInfo(uint32_t pid) const;
-    void start();
+
+    void start(std::chrono::milliseconds interval = std::chrono::milliseconds(2000));
     void stop();
     
 private:
-    bool running = false;
+
+    std::vector<ProcessInfo> sampleProcesses();
+
+#ifdef _WIN32
+    struct PrevTimes {
+	ULONGLONG kernel{0};
+	ULONGLONG user{0};
+	ULONGLONG wallClock{0};
+	int numCores{1};
+    };
+#else
+    struct PrevTime {
+	unsigned long long utime{0};
+	unsigned long long stime{0};
+	unsigned long long wallClock{0};
+	long clockTicks{100};
+    };
+#endif
+
+    std::unordered_map<uint32_t, prevTimes> m_prevTimes;
+
+    mutable std::mutex m_mutex;
+    std::vectore<ProcessInfo> m_processes;
+
+    std::atomic<bool> m_running{false};
+    std::thread m_thread;
+    std::chrono::milliseconds m_interval{2000};
+
+    void pollLoop();
 };
 
-#endif // PROCESS_MONITOR_HPP
+#endif
