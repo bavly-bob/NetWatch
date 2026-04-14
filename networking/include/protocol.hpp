@@ -21,7 +21,6 @@ std::string encode(const std::string& json);
 // Extract message length from header
 uint32_t decodeHeader(const char* data);
 
-// Convert enum <-> string (optional but useful)
 std::string toString(MessageType type);
 MessageType fromString(const std::string& typeStr);
 

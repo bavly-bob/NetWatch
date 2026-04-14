@@ -9,6 +9,7 @@
 #include <mutex>
 
 #ifdef _WIN32
+#include <winsock2.h>
 #include <windows.h>
 #include <psapi.h>
 #ifdef _MSC_VER
@@ -30,8 +31,8 @@ public:
         unsigned long usedMemoryKB;
 	unsigned long freeMemoryKB;
         float memoryUsagePercent;
-	double totalGB() const { return totalMemoryKB / (1024*1024) };
-	double usedGB() const { return usedMemoryKB / (1024 * 1024) };
+	double totalGB() const { return totalMemoryKB / (1024.0 * 1024.0); }
+	double usedGB() const { return usedMemoryKB / (1024.0 * 1024.0); }
     };
     
     struct CpuInfo {
