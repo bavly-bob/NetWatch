@@ -1,13 +1,15 @@
-#include "system_monitor.hpp"
+#include "../include/system_monitor.hpp"
 
 #include <stdexcept>
 #include <cstring>
 #include <algorithm>
 
 #ifdef _WIN32
+  #include <windows.h>
   #include <winsock2.h>
   #include <ws2tcpip.h>
-  #pragma comment(lib, "ws2_32.lib")
+  #pragma comment(lib, "Ws2_32.lib")
+  #pragma comment(lib, "kernel32.lib")
 #else
   #include <sys/sysinfo.h>
   #include <sys/types.h>
@@ -32,6 +34,7 @@ SystemMonitor::SystemMonitor() {
    #else
 	sampleCpu();
    #endif
+	}
 }
 
 SystemMonitor::~SystemMonitor() {
@@ -88,13 +91,14 @@ std::string SystemMonitor::getIpAddress() const {
 	}
 	freeifaddrs(ifaddr);
 	return result;
+#endif
 }
 
 std::string SystemMonitor::getUptime() const {
 	long seconds = 0;
 
 #ifdef _WIN32
-	seconds = static_cast<long>(GetTickCount64() / 1000ULL);
+	seconds = static_cast<long>(GetTickCount() / 1000ULL);
 #else
 	struct sysinfo si{};
 	if (sysinfo(&si) == 0)
@@ -111,7 +115,7 @@ std::string SystemMonitor::getUptime() const {
 	return out;
 }
 
-SystemMonitor::MemoryIngo SystemMonitor::sampleMemory() const
+SystemMonitor::MemoryInfo SystemMonitor::sampleMemory() const
 {
 	MemoryInfo info{};
 
@@ -154,7 +158,7 @@ SystemMonitor::MemoryIngo SystemMonitor::sampleMemory() const
 }
 
 SystemMonitor::CpuInfo SystemMonitor::sampleCpu() {
-	CpuInfo info();
+	CpuInfo info{};
 
 #ifdef _WIN32
 	SYSTEM_INFO si{};
@@ -166,7 +170,7 @@ SystemMonitor::CpuInfo SystemMonitor::sampleCpu() {
 
 	ULARGE_INTEGER curIdle, curKernel, curUser;
 	curIdle.LowPart = idle.dwLowDateTime; curIdle.HighPart = idle.dwHighDateTime;
-	curKernel.LowPart = kernel.dwLowDateTime; curKernel.HighPart = idle.dwHighDate;
+	curKernel.LowPart = kernel.dwLowDateTime; curKernel.HighPart = idle.dwHighDateTime;
 	curUser.LowPart = user.dwLowDateTime; curUser.HighPart = user.dwHighDateTime;
 
 	ULONGLONG deltaIdle = curIdle.QuadPart - m_prevIdleTime.QuadPart;

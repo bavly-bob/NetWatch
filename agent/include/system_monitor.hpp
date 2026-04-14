@@ -3,15 +3,17 @@
 
 #include <string>
 #include <atomic>
-#include <thread>
-#include <mutex>
 #include <chrono>
 #include <vector>
+#include <thread>
+#include <mutex>
 
 #ifdef _WIN32
 #include <windows.h>
-#include <pdh.h>
 #include <psapi.h>
+#ifdef _MSC_VER
+#include <pdh.h>
+#endif
 #else
 #include <fstream>
 #include <sstream>
@@ -42,7 +44,7 @@ public:
     std::string getHostname() const;
     std::string getIpAddress() const;
     std::string getUptime() const;
-    void start(chrono::milliseconds interval = chrono::milliseconds(1000));
+    void start(std::chrono::milliseconds interval = std::chrono::milliseconds(1000));
     void stop();
     
 private:
@@ -54,9 +56,9 @@ private:
     MemoryInfo m_memInfo{};
     CpuInfo m_cpuInfo{};
 
-   std::atomi<bool> m_running{false}l
+   std::atomic<bool> m_running{false};
    std::thread m_thread;
-   std::chrono::milliseconds m_interval(1000);
+   std::chrono::milliseconds m_interval{1000};
 
 #ifdef _WIN32
    ULARGE_INTEGER m_prevIdleTime{};
