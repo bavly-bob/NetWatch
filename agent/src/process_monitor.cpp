@@ -85,7 +85,6 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 	}
 
 	do {
-<<<<<<< HEAD
 		uint32_t pid = entry.th32ProcessID;
 		if(pid == 0) continue;
 
@@ -129,13 +128,6 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 
 	CloseHandle(snap);
 
-	std::sort(result.begin(), result.end(), [] (const ProcessInfo& a, const ProcessInfo& b) {
-		return a.cpuUsagePercent > b.cpuUsagePercent;
-	});
-
-	return result;
-
-=======
 		ProcessInfo info{};
 		info.pid = entry.th32ProcessID;
 		char buf[MAX_PATH] = {};
@@ -144,16 +136,16 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 		info.cpuUsagePercent = 0.0f;
 		info.memoryUsageKB = 0;
 		result.push_back(info);
-	} while(Process32NextW(snap, &entry));
 
-	CloseHandle(snap);
-	return result;
->>>>>>> 8584652780bfd5e594957383d668548e0d51a06f
-}
+    std::sort(result.begin(), result.end(), [] (const ProcessInfo& a, const ProcessInfo& b) {
+		return a.cpuUsagePercent > b.cpuUsagePercent;
+	});
+
+        return result;
+	} 
 
 #else
 
-<<<<<<< HEAD
 namespace {
 
 
@@ -273,12 +265,6 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses()
         });
 
     return result;
-=======
-std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
-	std::vector<ProcessInfo> result;
-	// TODO: Write Non-Windows logic
-	return result;
->>>>>>> 8584652780bfd5e594957383d668548e0d51a06f
 }
 
 #endif

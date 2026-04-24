@@ -38,17 +38,17 @@ private:
 
 #ifdef _WIN32
     struct PrevTimes {
-	ULONGLONG kernel{0};
-	ULONGLONG user{0};
-	ULONGLONG wallClock{0};
-	int numCores{1};
+	    ULONGLONG kernel{0};
+	    ULONGLONG user{0};
+	    ULONGLONG wallClock{0};
+	    int numCores{1};
     };
 #else
     struct PrevTimes {
-	unsigned long long utime{0};
-	unsigned long long stime{0};
-	unsigned long long wallClock{0};
-	long clockTicks{100};
+	    unsigned long long utime{0};
+	    unsigned long long stime{0};
+	    unsigned long long wallClock{0};
+	    long clockTicks{100};
     };
 #endif
 
