@@ -96,7 +96,7 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 
 		char narrow[MAX_PATH] = {};
 		WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, narrow, sizeof(narrow), nullptr, nullptr);
-		info.name = narrow;
+		
 
 		PROCESS_MEMORY_COUNTERS pmc{};
 		pmc.cb = sizeof(pmc);
@@ -105,8 +105,8 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 		
 		FILETIME creation, exit, kernel, user;
 		if(GetProcessTimes(hProc, &creation, &exit, &kernel, &user)) {
-			ULONGLONG kTime = static_cast<ULONGLONG>(kernel.dwHighDateTime << 32) | kernel.dwLowDateTime;
-			ULONGLONG uTime = static_cast<ULONGLONG>(user.dwHighDateTime << 32) | user.dwLowDateTime;
+			ULONGLONG kTime = (static_cast<ULONGLONG>(kernel.dwHighDateTime) << 32) | kernel.dwLowDateTime;
+			ULONGLONG uTime = (static_cast<ULONGLONG>(user.dwHighDateTime) << 32) | user.dwLowDateTime;
 
 			auto it = m_prevTimes.find(pid);
 			if(it != m_prevTimes.end()) {
@@ -133,11 +133,12 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 	});
 
     return result;
-}
+} 
 
 #else
 
 namespace {
+
 
 bool readProcStatus(uint32_t pid, const std::string& key, unsigned long long& out)
 {
@@ -153,6 +154,7 @@ bool readProcStatus(uint32_t pid, const std::string& key, unsigned long long& ou
     }
     return false;
 }
+
 
 bool readProcStat(uint32_t pid,
                   std::string& name,
@@ -183,6 +185,7 @@ bool readProcStat(uint32_t pid,
 
     return true;
 }
+
 
 unsigned long long monotonicJiffies(long clkTck)
 {
@@ -253,7 +256,6 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses()
         });
 
     return result;
-}
 }
 
 #endif
