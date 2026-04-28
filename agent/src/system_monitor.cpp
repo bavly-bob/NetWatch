@@ -1,15 +1,13 @@
-#include "../include/system_monitor.hpp"
+#include "system_monitor.hpp"
 
 #include <stdexcept>
 #include <cstring>
 #include <algorithm>
 
 #ifdef _WIN32
-  #include <windows.h>
   #include <winsock2.h>
   #include <ws2tcpip.h>
-  #pragma comment(lib, "Ws2_32.lib")
-  #pragma comment(lib, "kernel32.lib")
+  #pragma comment(lib, "ws2_32.lib")
 #else
   #include <sys/sysinfo.h>
   #include <sys/types.h>
@@ -98,7 +96,7 @@ std::string SystemMonitor::getUptime() const {
 	long seconds = 0;
 
 #ifdef _WIN32
-	seconds = static_cast<long>(GetTickCount() / 1000ULL);
+	seconds = static_cast<long>(GetTickCount64() / 1000ULL);
 #else
 	struct sysinfo si{};
 	if (sysinfo(&si) == 0)
@@ -124,7 +122,9 @@ SystemMonitor::MemoryInfo SystemMonitor::sampleMemory() const
 	ms.dwLength = sizeof(ms);
 	if (GlobalMemoryStatusEx(&ms)) {
 	   info.totalMemoryKB = static_cast<unsigned long>(ms.ullTotalPhys / 1024ULL);
-	   info.freeMemoryKB = static_cast<unsigned long>(ms.ullAvailPhys / 1024ULL);
+	   info.freeMemoryKB  = static_cast<unsigned long>(ms.ullAvailPhys / 1024ULL);
+	   info.usedMemoryKB  = (info.totalMemoryKB > info.freeMemoryKB)
+	                            ? (info.totalMemoryKB - info.freeMemoryKB) : 0;
 	   if(info.totalMemoryKB > 0)
 		info.memoryUsagePercent = 100.0f * static_cast<float>(info.usedMemoryKB) / static_cast<float>(info.totalMemoryKB);
 	}

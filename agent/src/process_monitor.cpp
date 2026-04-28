@@ -1,4 +1,4 @@
-#include "../include/process_monitor.hpp"
+#include "process_monitor.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -96,7 +96,7 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 
 		char narrow[MAX_PATH] = {};
 		WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, narrow, sizeof(narrow), nullptr, nullptr);
-		
+		info.name = narrow;
 
 		PROCESS_MEMORY_COUNTERS pmc{};
 		pmc.cb = sizeof(pmc);
@@ -128,26 +128,16 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 
 	CloseHandle(snap);
 
-		ProcessInfo info{};
-		info.pid = entry.th32ProcessID;
-		char buf[MAX_PATH] = {};
-		WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, buf, MAX_PATH, nullptr, nullptr);
-		info.name = buf;
-		info.cpuUsagePercent = 0.0f;
-		info.memoryUsageKB = 0;
-		result.push_back(info);
-
     std::sort(result.begin(), result.end(), [] (const ProcessInfo& a, const ProcessInfo& b) {
 		return a.cpuUsagePercent > b.cpuUsagePercent;
 	});
 
-        return result;
-	} 
+    return result;
+}
 
 #else
 
 namespace {
-
 
 bool readProcStatus(uint32_t pid, const std::string& key, unsigned long long& out)
 {
@@ -163,7 +153,6 @@ bool readProcStatus(uint32_t pid, const std::string& key, unsigned long long& ou
     }
     return false;
 }
-
 
 bool readProcStat(uint32_t pid,
                   std::string& name,
@@ -194,7 +183,6 @@ bool readProcStat(uint32_t pid,
 
     return true;
 }
-
 
 unsigned long long monotonicJiffies(long clkTck)
 {
@@ -265,6 +253,7 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses()
         });
 
     return result;
+}
 }
 
 #endif

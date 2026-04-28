@@ -3,18 +3,16 @@
 
 #include <string>
 #include <atomic>
-#include <chrono>
-#include <vector>
 #include <thread>
 #include <mutex>
+#include <chrono>
+#include <vector>
 
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
-#include <psapi.h>
-#ifdef _MSC_VER
 #include <pdh.h>
-#endif
+#include <psapi.h>
 #else
 #include <fstream>
 #include <sstream>
