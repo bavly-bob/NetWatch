@@ -19,8 +19,8 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
 find_package(Boost REQUIRED COMPONENTS system)
 
 # Networking and Common Library
@@ -54,6 +54,8 @@ set(PROJECT_SOURCES
     dashboard/mainwindow.cpp
     dashboard/mainwindow.hpp
     dashboard/mainwindow.ui
+    dashboard/services/llm_client.cpp
+    dashboard/services/llm_client.hpp
     dashboard/widgets/process_table.cpp
     dashboard/widgets/process_table.hpp
     dashboard/widgets/device_card.hpp
@@ -85,6 +87,7 @@ target_include_directories(NetWatch PRIVATE
 
 target_link_libraries(NetWatch PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Network
     Boost::system
     NetWatch_Networking
 )

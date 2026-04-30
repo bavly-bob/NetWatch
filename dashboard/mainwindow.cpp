@@ -21,6 +21,7 @@
 // ─── Constructor ──────────────────────────────────────────────────────────────
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     isDemoMode = true;
+    m_llmClient = new LlmClient(this);
     setupStyles();
     setupUI();
     loadDemoData();
@@ -34,6 +35,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     connect(this, &MainWindow::agentConnected,
             this, &MainWindow::onConnectionStatusChanged,
             Qt::QueuedConnection);
+    connect(m_llmClient, &LlmClient::analysisReady,
+            this, &MainWindow::onLlmAnalysisReady);
+    connect(m_llmClient, &LlmClient::analysisFailed,
+            this, &MainWindow::onLlmAnalysisFailed);
 
     startServer();
 }
@@ -147,6 +152,29 @@ void MainWindow::setupUI() {
     processTable = new ProcessTable();
     detailLayout->addWidget(processTable);
 
+    auto* analysisGroup = new QGroupBox("AI INCIDENT ANALYSIS");
+    auto* analysisLayout = new QVBoxLayout(analysisGroup);
+
+    analyzeButton = new QPushButton("Analyze Selected Device");
+    analyzeButton->setEnabled(m_llmClient && m_llmClient->isConfigured());
+    connect(analyzeButton, &QPushButton::clicked, this, &MainWindow::onAnalyzeClicked);
+
+    analysisStatusLabel = new QLabel();
+    if (m_llmClient && !m_llmClient->isConfigured()) {
+        analysisStatusLabel->setText("LLM not configured. Set OPENAI_API_KEY.");
+    } else {
+        analysisStatusLabel->setText("Ready");
+    }
+
+    analysisView = new QTextEdit();
+    analysisView->setReadOnly(true);
+    analysisView->setPlaceholderText("Run an analysis to get AI triage recommendations.");
+
+    analysisLayout->addWidget(analyzeButton);
+    analysisLayout->addWidget(analysisStatusLabel);
+    analysisLayout->addWidget(analysisView);
+    detailLayout->addWidget(analysisGroup);
+
     mainSplitter->addWidget(sidebar);
     mainSplitter->addWidget(detailView);
     setCentralWidget(mainSplitter);
@@ -233,6 +261,36 @@ void MainWindow::onConnectionStatusChanged(bool connected) {
         statusBar()->showMessage("Agent disconnected", 0);
         this->setWindowTitle("NetWatch Central Command [WAITING]");
     }
+}
+
+void MainWindow::onAnalyzeClicked() {
+    if (!m_llmClient) return;
+    if (!m_llmClient->isConfigured()) {
+        onLlmAnalysisFailed(m_llmClient->configurationHint());
+        return;
+    }
+    if (allDevicesData.find(currentSelectedDevice) == allDevicesData.end()) {
+        onLlmAnalysisFailed("Select a device before requesting analysis.");
+        return;
+    }
+
+    const auto& selected = allDevicesData[currentSelectedDevice];
+    analyzeButton->setEnabled(false);
+    analysisStatusLabel->setText("Analyzing...");
+    analysisView->setPlainText("Waiting for LLM response...");
+    m_llmClient->requestAnalysis(selected);
+}
+
+void MainWindow::onLlmAnalysisReady(const QString& analysis) {
+    if (analyzeButton) analyzeButton->setEnabled(true);
+    if (analysisStatusLabel) analysisStatusLabel->setText("Analysis complete");
+    if (analysisView) analysisView->setPlainText(analysis);
+}
+
+void MainWindow::onLlmAnalysisFailed(const QString& errorMessage) {
+    if (analyzeButton) analyzeButton->setEnabled(true);
+    if (analysisStatusLabel) analysisStatusLabel->setText("Analysis failed");
+    if (analysisView) analysisView->setPlainText(errorMessage);
 }
 
 // ─── Demo data ───────────────────────────────────────────────────────────────

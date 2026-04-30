@@ -8,9 +8,12 @@
 #include <QMap>
 #include <QGroupBox>
 #include <QTimer>
+#include <QPushButton>
+#include <QTextEdit>
 
 #include "widgets/process_table.hpp"
 #include "message_types.hpp"
+#include "services/llm_client.hpp"
 
 // Forward-declare so we don't pull Boost headers into every Qt translation unit
 namespace netwatch::networking { class Server; }
@@ -30,6 +33,9 @@ signals:
 private slots:
     void onDataReceived(const SystemStats& stats);
     void onConnectionStatusChanged(bool connected);
+    void onAnalyzeClicked();
+    void onLlmAnalysisReady(const QString& analysis);
+    void onLlmAnalysisFailed(const QString& errorMessage);
 
 private:
     void setupUI();
@@ -46,6 +52,9 @@ private:
     QLabel       *statusLabel = nullptr;
     QListWidget  *deviceListWidget = nullptr;
     ProcessTable *processTable     = nullptr;
+    QPushButton  *analyzeButton    = nullptr;
+    QTextEdit    *analysisView     = nullptr;
+    QLabel       *analysisStatusLabel = nullptr;
 
     // Data
     QMap<QString, SystemStats> allDevicesData;
@@ -56,4 +65,5 @@ private:
     std::shared_ptr<boost::asio::io_context>        m_io;
     std::shared_ptr<netwatch::networking::Server>   m_server;
     std::thread m_ioThread;
+    LlmClient* m_llmClient = nullptr;
 };
