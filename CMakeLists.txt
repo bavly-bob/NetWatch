@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 project(NetWatch VERSION 0.1 LANGUAGES CXX)
 
@@ -105,16 +105,34 @@ set_target_properties(NetWatch PROPERTIES
 
 # Testing
 enable_testing()
-add_executable(test_protocol tests/test_protocol.cpp)
-target_link_libraries(test_protocol PRIVATE NetWatch_Networking)
-add_test(NAME ProtocolTest COMMAND test_protocol)
-
-add_executable(test_connection tests/test_connection.cpp)
-target_link_libraries(test_connection PRIVATE NetWatch_Networking)
-if(WIN32)
-    target_link_libraries(test_connection PRIVATE ws2_32 mswsock)
+find_package(GTest CONFIG QUIET)
+if(NOT GTest_FOUND)
+    find_package(GTest QUIET)
 endif()
-add_test(NAME ConnectionTest COMMAND test_connection)
+
+if(GTest_FOUND)
+    include(GoogleTest)
+
+    add_executable(test_protocol tests/test_protocol.cpp)
+    target_link_libraries(test_protocol PRIVATE NetWatch_Networking GTest::gtest_main)
+    if(WIN32)
+        add_custom_command(TARGET test_protocol POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:test_protocol> $<TARGET_FILE_DIR:test_protocol> COMMAND_EXPAND_LISTS
+        )
+    endif()
+    gtest_discover_tests(test_protocol)
+
+    add_executable(test_connection tests/test_connection.cpp)
+    target_link_libraries(test_connection PRIVATE NetWatch_Networking GTest::gtest_main)
+    if(WIN32)
+        add_custom_command(TARGET test_connection POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:test_connection> $<TARGET_FILE_DIR:test_connection> COMMAND_EXPAND_LISTS
+        )
+    endif()
+    gtest_discover_tests(test_connection)
+else()
+    message(WARNING "GTest not found. Skipping test targets. Install gtest in vcpkg to enable tests.")
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS NetWatch NetWatchAgent NetWatch_Networking
