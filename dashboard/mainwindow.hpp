@@ -14,6 +14,7 @@
 #include "widgets/process_table.hpp"
 #include "message_types.hpp"
 #include "services/llm_client.hpp"
+#include "services/db_manager.hpp"
 
 // Forward-declare so we don't pull Boost headers into every Qt translation unit
 namespace netwatch::networking { class Server; }
@@ -41,6 +42,7 @@ private:
     void setupUI();
     void setupStyles();
     void refreshDisplay();
+    void refreshIncidentHistory();
     void loadDemoData();
     void startServer();
     QGroupBox* createGaugeGroup(QString title, QProgressBar* bar);
@@ -55,9 +57,11 @@ private:
     QPushButton  *analyzeButton    = nullptr;
     QTextEdit    *analysisView     = nullptr;
     QLabel       *analysisStatusLabel = nullptr;
+    QListWidget  *incidentHistoryWidget = nullptr;
 
     // Data
     QMap<QString, SystemStats> allDevicesData;
+    QMap<QString, qint64> incidentIdsByDevice;
     QString currentSelectedDevice;
     bool    isDemoMode = true;
 
@@ -66,4 +70,5 @@ private:
     std::shared_ptr<netwatch::networking::Server>   m_server;
     std::thread m_ioThread;
     LlmClient* m_llmClient = nullptr;
+    DbManager* m_dbManager = nullptr;
 };

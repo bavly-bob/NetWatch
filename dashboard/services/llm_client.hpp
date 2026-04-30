@@ -15,6 +15,7 @@ public:
 
     bool isConfigured() const;
     QString configurationHint() const;
+    QString modelName() const;
 
     void requestAnalysis(const SystemStats& stats);
 

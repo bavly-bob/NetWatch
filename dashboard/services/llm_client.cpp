@@ -30,6 +30,10 @@ QString LlmClient::configurationHint() const {
     return QString("Set OPENAI_API_KEY. Optional: NETWATCH_LLM_MODEL, NETWATCH_LLM_ENDPOINT.");
 }
 
+QString LlmClient::modelName() const {
+    return m_model;
+}
+
 void LlmClient::requestAnalysis(const SystemStats& stats) {
     if (!isConfigured()) {
         emit analysisFailed(configurationHint());

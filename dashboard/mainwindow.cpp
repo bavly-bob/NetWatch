@@ -8,6 +8,8 @@
 #include <QFrame>
 #include <QSplitter>
 #include <QMetaObject>
+#include <QListWidgetItem>
+#include <QColor>
 
 // Networking
 #include <boost/asio.hpp>
@@ -22,6 +24,11 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     isDemoMode = true;
     m_llmClient = new LlmClient(this);
+    m_dbManager = new DbManager();
+    if (!m_dbManager->initialize()) {
+        delete m_dbManager;
+        m_dbManager = nullptr;
+    }
     setupStyles();
     setupUI();
     loadDemoData();
@@ -47,6 +54,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 MainWindow::~MainWindow() {
     if (m_io) m_io->stop();
     if (m_ioThread.joinable()) m_ioThread.join();
+    delete m_dbManager;
 }
 
 // ─── Start the Boost.Asio server ─────────────────────────────────────────────
@@ -152,6 +160,13 @@ void MainWindow::setupUI() {
     processTable = new ProcessTable();
     detailLayout->addWidget(processTable);
 
+    auto* incidentGroup = new QGroupBox("RECENT INCIDENTS");
+    auto* incidentLayout = new QVBoxLayout(incidentGroup);
+    incidentHistoryWidget = new QListWidget();
+    incidentHistoryWidget->setToolTip("Live records read from SQLite");
+    incidentLayout->addWidget(incidentHistoryWidget);
+    detailLayout->addWidget(incidentGroup);
+
     auto* analysisGroup = new QGroupBox("AI INCIDENT ANALYSIS");
     auto* analysisLayout = new QVBoxLayout(analysisGroup);
 
@@ -183,6 +198,8 @@ void MainWindow::setupUI() {
         currentSelectedDevice = name;
         refreshDisplay();
     });
+
+    refreshIncidentHistory();
 }
 
 // ─── Slot: new stats packet arrived ──────────────────────────────────────────
@@ -196,6 +213,12 @@ void MainWindow::onDataReceived(const SystemStats& stats) {
 
     QString name = QString::fromStdString(stats.hostname);
     allDevicesData[name] = stats;
+    if (m_dbManager && m_dbManager->isReady()) {
+        const qint64 incidentId = m_dbManager->upsertIncident(stats);
+        if (incidentId >= 0) {
+            incidentIdsByDevice[name] = incidentId;
+        }
+    }
 
     QList<QListWidgetItem*> items = deviceListWidget->findItems(name, Qt::MatchExactly);
     
@@ -221,6 +244,8 @@ void MainWindow::onDataReceived(const SystemStats& stats) {
 
     if (currentSelectedDevice == name)
         refreshDisplay();
+
+    refreshIncidentHistory();
 }
 
 void MainWindow::refreshDisplay() {
@@ -243,6 +268,33 @@ void MainWindow::refreshDisplay() {
         .arg(data.ram_total_gb, 0, 'f', 1));
 
     processTable->updateProcesses(data.processes);
+}
+
+void MainWindow::refreshIncidentHistory() {
+    if (!incidentHistoryWidget || !m_dbManager || !m_dbManager->isReady()) return;
+
+    incidentHistoryWidget->clear();
+    const auto recent = m_dbManager->fetchRecentIncidents(15);
+    for (const auto& incident : recent) {
+        const double ramPercent = incident.ramTotalGb > 0.0
+            ? (incident.ramUsedGb / incident.ramTotalGb) * 100.0
+            : 0.0;
+        const QString label = QString("%1 [%2] CPU %3% | RAM %4% | %5")
+            .arg(incident.hostname)
+            .arg(incident.severity.toUpper())
+            .arg(incident.cpuTotal, 0, 'f', 1)
+            .arg(ramPercent, 0, 'f', 1)
+            .arg(incident.updatedAt);
+
+        auto* item = new QListWidgetItem(label, incidentHistoryWidget);
+        item->setToolTip(QString("ID: %1 | IP: %2 | Status: %3")
+            .arg(incident.id)
+            .arg(incident.ipAddress)
+            .arg(incident.status));
+        if (incident.severity == "critical") item->setForeground(Qt::red);
+        else if (incident.severity == "high") item->setForeground(QColor("#ffa500"));
+        else item->setForeground(QColor("#64ffda"));
+    }
 }
 
 QGroupBox* MainWindow::createGaugeGroup(QString title, QProgressBar* bar) {
@@ -285,6 +337,14 @@ void MainWindow::onLlmAnalysisReady(const QString& analysis) {
     if (analyzeButton) analyzeButton->setEnabled(true);
     if (analysisStatusLabel) analysisStatusLabel->setText("Analysis complete");
     if (analysisView) analysisView->setPlainText(analysis);
+
+    if (m_dbManager && m_dbManager->isReady()) {
+        const qint64 incidentId = incidentIdsByDevice.value(currentSelectedDevice, -1);
+        if (incidentId >= 0) {
+            m_dbManager->saveAnalysis(incidentId, m_llmClient ? m_llmClient->modelName() : "unknown", analysis);
+        }
+    }
+    refreshIncidentHistory();
 }
 
 void MainWindow::onLlmAnalysisFailed(const QString& errorMessage) {
