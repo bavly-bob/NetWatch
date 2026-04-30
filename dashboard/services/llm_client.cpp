@@ -17,9 +17,18 @@ LlmClient::LlmClient(QObject* parent)
     : QObject(parent),
       m_network(new QNetworkAccessManager(this)),
       m_apiKey(qEnvironmentVariable("OPENAI_API_KEY")),
-      m_endpoint(qEnvironmentVariable("NETWATCH_LLM_ENDPOINT", "https://api.openai.com/v1/chat/completions")),
+      m_endpoint(QStringLiteral("https://api.openai.com/v1/chat/completions")),
       m_model(qEnvironmentVariable("NETWATCH_LLM_MODEL", "gpt-4o-mini"))
 {
+    if (m_apiKey.startsWith("sk-or-")) {
+        m_endpoint = QStringLiteral("https://openrouter.ai/api/v1/chat/completions");
+        if (!qEnvironmentVariableIsSet("NETWATCH_LLM_MODEL")) {
+            // OpenRouter expects provider/model naming.
+            m_model = QStringLiteral("openai/gpt-4o-mini");
+        }
+    } else {
+        m_endpoint = QStringLiteral("https://api.openai.com/v1/chat/completions");
+    }
 }
 
 bool LlmClient::isConfigured() const {
@@ -27,7 +36,7 @@ bool LlmClient::isConfigured() const {
 }
 
 QString LlmClient::configurationHint() const {
-    return QString("Set OPENAI_API_KEY. Optional: NETWATCH_LLM_MODEL, NETWATCH_LLM_ENDPOINT.");
+    return QString("Set OPENAI_API_KEY. Optional: NETWATCH_LLM_MODEL.");
 }
 
 QString LlmClient::modelName() const {
@@ -43,6 +52,10 @@ void LlmClient::requestAnalysis(const SystemStats& stats) {
     QNetworkRequest request{QUrl(m_endpoint)};
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Authorization", QString("Bearer %1").arg(m_apiKey).toUtf8());
+    if (m_apiKey.startsWith("sk-or-")) {
+        request.setRawHeader("HTTP-Referer", "https://netwatch.local");
+        request.setRawHeader("X-Title", "NetWatch");
+    }
 
     const QString systemInstruction =
         "You are a senior network incident analyst. Given system metrics and processes, "
@@ -75,6 +88,10 @@ void LlmClient::requestAnalysis(const SystemStats& stats) {
         const QString analysis = parseAnalysisFromResponse(body);
         if (analysis.trimmed().isEmpty()) {
             emit analysisFailed("LLM response was empty or could not be parsed.");
+            return;
+        }
+        if (analysis.startsWith("API error:")) {
+            emit analysisFailed(analysis);
             return;
         }
 
@@ -121,10 +138,37 @@ QString LlmClient::parseAnalysisFromResponse(const QByteArray& responseBody) con
     if (!document.isObject()) return {};
 
     const QJsonObject root = document.object();
+    const QJsonObject errorObj = root.value("error").toObject();
+    if (!errorObj.isEmpty()) {
+        const QString errorMessage = errorObj.value("message").toString().trimmed();
+        if (!errorMessage.isEmpty()) return QString("API error: %1").arg(errorMessage);
+    }
+
     const QJsonArray choices = root.value("choices").toArray();
     if (choices.isEmpty()) return {};
 
     const QJsonObject firstChoice = choices.first().toObject();
     const QJsonObject message = firstChoice.value("message").toObject();
-    return message.value("content").toString().trimmed();
+    const QJsonValue contentValue = message.value("content");
+    if (contentValue.isString()) {
+        return contentValue.toString().trimmed();
+    }
+    if (contentValue.isArray()) {
+        QString combined;
+        const QJsonArray blocks = contentValue.toArray();
+        for (const QJsonValue& blockValue : blocks) {
+            const QJsonObject block = blockValue.toObject();
+            const QString text = block.value("text").toString();
+            if (!text.trimmed().isEmpty()) {
+                if (!combined.isEmpty()) combined += "\n";
+                combined += text.trimmed();
+            }
+        }
+        if (!combined.isEmpty()) return combined;
+    }
+
+    const QString legacyText = firstChoice.value("text").toString().trimmed();
+    if (!legacyText.isEmpty()) return legacyText;
+
+    return {};
 }
