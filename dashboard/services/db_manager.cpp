@@ -16,6 +16,8 @@
 DbManager::DbManager()
     : m_connectionName("netwatch_main")
 {
+    // The database will be stored in the application's data directory
+    // on my pc it's C:\Users\baboa\AppData\Roaming\CapstoneTeam\NetWatch Dashboard
     const QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     if (!appDataPath.isEmpty()) {
         m_dbPath = QDir(appDataPath).filePath("netwatch.db");
