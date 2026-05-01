@@ -10,7 +10,6 @@
 
 // Networking
 #include "client.hpp"
-#include "protocol.hpp"
 
 // Shared types
 #include "message_types.hpp"
@@ -85,10 +84,10 @@ int main(int argc, char* argv[]) {
     while (g_running) {
         SystemStats stats = buildStats(sysMonitor, procMonitor);
 
-        // Serialize → frame → send
-        std::string json    = netwatch::serialize(stats);
-        std::string framed  = netwatch::protocol::encode(json);   // adds 4-byte length header
-        client->send(framed);
+        // Serialize and send raw payload.
+        // Connection::send() already applies the [4-byte length][payload] framing.
+        std::string json = netwatch::serialize(stats);
+        client->send(json);
 
         std::cout << "[Agent] Sent: CPU=" << stats.cpu_total
                   << "% RAM=" << stats.ram_used_gb << "/" << stats.ram_total_gb << " GB"

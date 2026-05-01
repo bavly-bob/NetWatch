@@ -96,6 +96,10 @@ std::vector<ProcessMonitor::ProcessInfo> ProcessMonitor::sampleProcesses() {
 
 		char narrow[MAX_PATH] = {};
 		WideCharToMultiByte(CP_UTF8, 0, entry.szExeFile, -1, narrow, sizeof(narrow), nullptr, nullptr);
+		info.name = narrow;
+		if (info.name.empty()) {
+			info.name = "unknown";
+		}
 		
 
 		PROCESS_MEMORY_COUNTERS pmc{};
