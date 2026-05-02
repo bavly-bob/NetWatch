@@ -9,6 +9,7 @@ set(VCPKG_APPLOCAL_DEPS OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(MSVC)
     add_compile_options(/Zc:__cplusplus /permissive-)
 endif()
@@ -19,9 +20,13 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Sql)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Sql)
 find_package(Boost REQUIRED COMPONENTS system)
+
+option(BUILD_DASHBOARD "Build Qt Dashboard" ON)
+if(BUILD_DASHBOARD)
+    find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Network Sql)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network Sql)
+endif()
 
 # Networking and Common Library
 add_library(NetWatch_Networking STATIC
@@ -48,7 +53,8 @@ add_executable(NetWatchAgent
 target_include_directories(NetWatchAgent PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/agent/include)
 target_link_libraries(NetWatchAgent PRIVATE NetWatch_Networking)
 
-# Dashboard Target (Main Application)
+if(BUILD_DASHBOARD)
+
 set(PROJECT_SOURCES
     dashboard/main.cpp
     dashboard/mainwindow.cpp
@@ -141,12 +147,19 @@ else()
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS NetWatch NetWatchAgent NetWatch_Networking
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
+if(BUILD_DASHBOARD)
+	install(TARGETS NetWatch NetWatchAgent NetWatch_Networking
+    	BUNDLE DESTINATION .
+    	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	)
+else()
+	install(TARGETS NetWatchAgent NetWatch_Networking
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    	)
+endif()
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(NetWatch)
+endif()
+
 endif()
