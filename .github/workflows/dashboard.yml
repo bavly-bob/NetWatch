@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -15,12 +18,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Qt 6.7.0
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.7.0'
-          arch: win64_msvc2019_64
-          modules: 'qtnetwork qtsql'
+      - name: Install Qt via aqtinstall
+        run: |
+          pip install aqtinstall
+          aqt install-qt windows desktop 6.7.0 win64_msvc2019_64 -m qtnetwork qtsql
+          echo "${{ github.workspace }}/6.7.0/msvc2019_64/bin" >> $env:GITHUB_PATH
+          echo "Qt6_DIR=${{ github.workspace }}/6.7.0/msvc2019_64/lib/cmake/Qt6" >> $env:GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/6.7.0/msvc2019_64" >> $env:GITHUB_ENV
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -35,6 +39,8 @@ jobs:
           cmake -S . -B build `
             -DCMAKE_TOOLCHAIN_FILE="vcpkg/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/6.7.0/msvc2019_64" `
+            -DQt6_DIR="${{ github.workspace }}/6.7.0/msvc2019_64/lib/cmake/Qt6" `
             -DBUILD_DASHBOARD=ON
 
       - name: Build Dashboard
@@ -42,6 +48,7 @@ jobs:
 
       - name: Deploy Qt DLLs
         run: |
+          $env:PATH = "${{ github.workspace }}\6.7.0\msvc2019_64\bin;$env:PATH"
           cd build\Release
           windeployqt NetWatch.exe
 
