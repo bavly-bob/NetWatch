@@ -21,7 +21,7 @@ jobs:
       - name: Install Qt via aqtinstall
         run: |
           pip install aqtinstall
-          aqt install-qt windows desktop 6.7.0 win64_msvc2019_64 -m qtnetwork qtsql
+          aqt install-qt windows desktop 6.7.0 win64_msvc2019_64
           echo "${{ github.workspace }}/6.7.0/msvc2019_64/bin" >> $env:GITHUB_PATH
           echo "Qt6_DIR=${{ github.workspace }}/6.7.0/msvc2019_64/lib/cmake/Qt6" >> $env:GITHUB_ENV
           echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/6.7.0/msvc2019_64" >> $env:GITHUB_ENV
