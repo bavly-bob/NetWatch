@@ -1,0 +1,56 @@
+name: Build & Release Dashboard (Windows)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Qt 6.7.0
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.0'
+          arch: win64_msvc2019_64
+          modules: 'qtnetwork qtsql'
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Boost via vcpkg
+        run: |
+          .\vcpkg\vcpkg install boost-asio:x64-windows boost-system:x64-windows
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build `
+            -DCMAKE_TOOLCHAIN_FILE="vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DBUILD_DASHBOARD=ON
+
+      - name: Build Dashboard
+        run: cmake --build build --config Release --target NetWatch
+
+      - name: Deploy Qt DLLs
+        run: |
+          cd build\Release
+          windeployqt NetWatch.exe
+
+      - name: Zip the release folder
+        run: |
+          Compress-Archive -Path build\Release\* -DestinationPath NetWatch-Windows.zip
+
+      - name: Upload Dashboard to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: NetWatch-Windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

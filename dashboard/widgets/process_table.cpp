@@ -3,10 +3,10 @@
 
 ProcessTable::ProcessTable(QWidget *parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
-    
+
     searchBar = new QLineEdit();
     searchBar->setPlaceholderText("Search processes...");
-    
+
     table = new QTableWidget(0, 3);
     table->setHorizontalHeaderLabels({"PID", "Name", "CPU %"});
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
